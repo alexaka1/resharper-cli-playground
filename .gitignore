@@ -39,3 +39,6 @@ artifacts/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# ReSharper inspection results
+inspection-results.xml
