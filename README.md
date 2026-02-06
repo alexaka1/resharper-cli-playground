@@ -65,3 +65,7 @@ dotnet jb
 
 - .NET 10 SDK or later
 - JetBrains.ReSharper.GlobalTools (installed via dotnet-tools.json)
+
+## CI Workflow Template
+
+A reusable guide for setting up ReSharper CLI + SARIF + reviewdog workflows is available at `.github/workflows/README.md`.
