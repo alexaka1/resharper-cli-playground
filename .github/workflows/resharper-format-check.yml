@@ -1,0 +1,66 @@
+name: ReSharper format check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  security-events: write
+
+jobs:
+  inspectcode:
+    name: ReSharper InspectCode
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore local dotnet tools
+        run: dotnet tool restore
+
+      - name: Run ReSharper InspectCode (SARIF)
+        run: |
+          dotnet jb inspectcode StarterApp/StarterApp.csproj \
+            --format=Sarif \
+            --output=inspectcode.sarif
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: inspectcode.sarif
+
+      - name: Upload InspectCode report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspectcode-sarif
+          path: inspectcode.sarif
+
+      - name: Setup reviewdog
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-setup@d8edfce3dd5e1ec6978745e801f9c50b5ef80252 # v1.4.0
+
+      - name: reviewdog version
+        if: github.event_name == 'pull_request'
+        run: reviewdog -version
+
+      - name: Run reviewdog on SARIF report
+        if: github.event_name == 'pull_request'
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          reviewdog \
+            -f=sarif \
+            -name="resharper-inspectcode" \
+            -reporter=github-pr-check \
+            -filter-mode=nofilter \
+            -fail-level=warning \
+            < inspectcode.sarif
